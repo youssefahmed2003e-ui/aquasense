@@ -89,12 +89,32 @@ def book_course(request, course_id):
     Creates a Reservation with 'Pending' status and redirects to dashboard.
     """
     course = get_object_or_404(Course, id=course_id)
-    Reservation.objects.create(
-        user=request.user,
-        course=course,
-        status='Pending'
-    )
-    return redirect('dashboard')
+
+    if request.method == 'POST':
+        # Get data from form
+        scheduled_date = request.POST.get('date')
+        full_name = request.POST.get('full_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        divers = request.POST.get('divers', 1)
+        cert_level = request.POST.get('certification')
+        medical = request.POST.get('medical_clearance') == 'on'
+
+        Reservation.objects.create(
+            user=request.user,
+            course=course,
+            status='Pending',
+            scheduled_date=scheduled_date if scheduled_date else None,
+            full_name=full_name,
+            email=email,
+            phone_number=phone,
+            number_of_divers=divers,
+            certification_level=cert_level,
+            medical_clearance=medical
+        )
+        return redirect('dashboard')
+
+    return render(request, 'reservations/checkout.html', {'course': course})
 
 @login_required
 def checkout(request):
@@ -278,13 +298,24 @@ def chat_view(request):
     """
     if request.method == 'POST':
         try:
+            # Log incoming request
+            logger.info("Chat request received")
+            
+            # Get and validate API key
             api_key = os.getenv("GEMINI_API_KEY")
             if not api_key:
+                logger.error("GEMINI_API_KEY not found in environment variables")
                 return JsonResponse({'error': 'API key not configured.'}, status=500)
             
+            logger.info(f"API Key found: {api_key[:10]}...")
+            
+            # Configure Gemini
             genai.configure(api_key=api_key)
+            
+            # Parse request body
             data = json.loads(request.body)
             user_message = data.get('message', '')
+            logger.info(f"User message: {user_message}")
             
             # --- System Prompt Configuration ---
             system_prompt = """
@@ -292,7 +323,7 @@ def chat_view(request):
             Your goal is to be helpful, friendly, and professional.
             
             Info:
-            - Location: 123 Ocean Drive, Atlantis, Ocean City 90210.
+            - Location: Cairo , Egypt.
             - Contact: +1 (123) 456-7890.
             
             Courses:
@@ -304,16 +335,27 @@ def chat_view(request):
             Keep responses concise.
             """
             
-            model = genai.GenerativeModel('gemini-2.0-flash')
+            # Use the latest stable model
+            logger.info("Initializing Gemini model...")
+            model = genai.GenerativeModel('gemini-2.5-flash')
+            
+            logger.info("Starting chat...")
             chat = model.start_chat(history=[
                 {'role': 'user', 'parts': [system_prompt]},
                 {'role': 'model', 'parts': ["Understood. Ready to help."]}
             ])
             
+            logger.info("Sending message to Gemini...")
             response = chat.send_message(user_message)
+            
+            logger.info(f"AI response: {response.text[:50]}...")
             return JsonResponse({'response': response.text})
             
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {e}")
+            return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            logger.error(f"Error in chat_view: {str(e)}", exc_info=True)
+            return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
     
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+    return JsonResponse({'error': 'Invalid request method'}, status=400)

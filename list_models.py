@@ -2,7 +2,7 @@ import google.generativeai as genai
 import os
 
 # Use the API key from the user's code
-genai.configure(api_key="AIzaSyD2XYcghB818uiaKhPjSBrP5dOUUGb34ZQ")
+genai.configure(api_key="AIzaSyA_uHqD-19KTtgCm3GdhTZnhDFFi8U6_3w")
 
 print("Listing available models...")
 try:

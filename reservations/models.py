@@ -80,5 +80,13 @@ class Reservation(models.Model):
     scheduled_date = models.DateField(null=True, blank=True, help_text="Desired date for the dive")
     notes = models.TextField(blank=True, null=True)
 
+    # Detailed Booking Info
+    full_name = models.CharField(max_length=150, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    number_of_divers = models.PositiveIntegerField(default=1)
+    certification_level = models.CharField(max_length=100, blank=True, null=True)
+    medical_clearance = models.BooleanField(default=False, help_text="User confirmed they have no conflicting medical conditions")
+
     def __str__(self):
         return f"{self.user.username} - {self.course.title}"

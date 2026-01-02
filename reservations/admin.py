@@ -21,7 +21,7 @@ class InstructorAdmin(admin.ModelAdmin):
 
 @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
-    list_display = ('user', 'course', 'status', 'booking_date', 'scheduled_date')
+    list_display = ('user', 'course', 'status', 'booking_date', 'scheduled_date', 'full_name', 'phone_number', 'number_of_divers')
     list_filter = ('status', 'booking_date')
     actions = ['approve_reservations', 'reject_reservations']
 
